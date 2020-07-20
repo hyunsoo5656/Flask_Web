@@ -1,4 +1,7 @@
 from flask import Flask ,render_template
+from data import Articles
+
+
 
 app = Flask(__name__)
 app.debug=True
@@ -26,7 +29,9 @@ def articles():
 
     print("Success")
     #return "test"
-    return render_template('articles.html', hello="Garykim")
+    articles = Articles()
+    print(articles)
+    return render_template('articles.html', articles=articles)
 
 
 
