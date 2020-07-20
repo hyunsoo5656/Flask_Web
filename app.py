@@ -22,7 +22,7 @@ def aubout():
     #return "test"
     return render_template('about.html', hello="Garykim")
 
-@app.route('/articles')
+@app.route('/articles', methods =['GET', 'POST'])
 
 def articles():
     #return 'Hello World!!'
