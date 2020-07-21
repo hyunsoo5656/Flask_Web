@@ -40,10 +40,11 @@ def show_image():
 
 @app.route('/article/<int:id>')
 def article(id):
-    print(type(id))
-    articles = Articles()
-    return render_template('article.html', data = [articles, id])
-
+    print(id)
+    articles = Articles()[id-1]
+    print(articles)
+    return render_template('article.html', data = articles)
+    # return "Success"
 
 
 if __name__== '__main__':
