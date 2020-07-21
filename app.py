@@ -38,6 +38,11 @@ def articles():
 def show_image():
     return render_template('image.html')
 
+@app.route('/article/<int:id>')
+def article(id):
+    print(type(id))
+    return render_template('article.html')
+
 
 
 if __name__== '__main__':
