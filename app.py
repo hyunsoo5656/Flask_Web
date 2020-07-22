@@ -1,52 +1,96 @@
-from flask import Flask ,render_template
+from flask import Flask, render_template, flash, redirect, url_for, session, request, logging
+import pymysql
 from data import Articles
-
-
-
 app = Flask(__name__)
-app.debug=True
+app.debug = True
 
-@app.route('/')
+db = pymysql.connect(host='localhost',
+                port=3306,
+                user='root',
+                passwd='1234',
+                db='myflaskapp')
+
+
+
+
+@ app.route('/')
 def index():
-    #return 'Hello World!!'
+# print('Success')
+    return render_template('home.html', hello='Sean')
 
-    print("Success")
-    #return "test"
-    return render_template('home.html', hello="Garykim")
+@ app.route('/about')
+def about():
+    return render_template('about.html')
 
-@app.route('/about')
-def aubout():
-    #return 'Hello World!!'
+@app.route('/register',methods=['GET' ,'POST'])
+def register():
+    if request.method == 'POST':
 
-    print("Success")
-    #return "test"
-    return render_template('about.html', hello="Garykim")
+        # data = request.body.get('author')
+        name = request.form.get('name')
+        email = request.form.get('email')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        re_password = request.form.get('re_password')
 
-@app.route('/articles', methods =['GET', 'POST'])
+        if (password == re_password):
+            print([name, email, password, username, re_password])
+            cursor = db.cursor()
 
+            # name = 'SONG'
+            # email = '5@naver.com' 
+            # username = 'SONG'
+            # password = '1234'
+
+            # sql_3=  '''
+            #         INSERT INTO users(name, email , username, password) 
+            #         VALUES (%s, %s, %s,%s);
+            #         '''
+
+            sql = '''
+                INSERT INTO users (name, email, username, password) 
+                VALUES (%s, %s, %s, %s)
+            
+            '''
+
+            cursor.execute(sql, (name, email, username, password))
+                        
+            db.commit()
+            db.close()
+
+            # cursor = db.cursor()
+            # cursor.execute('SELECT * FROM users;')
+            # users = cursor.fetchall()
+            
+            return "register Success"
+
+
+
+
+
+            return "POST Success"
+            
+        else:    
+        # name = form.name.data
+            return "Invalid Password"
+    else:
+        return "GET Success"
+
+@ app.route('/articles', methods=['GET', 'POST'])
 def articles():
-    #return 'Hello World!!'
-
-    print("Success")
-    #return "test"
+    print('success')
     articles = Articles()
-    print(articles)
+    print(len(articles))
     return render_template('articles.html', articles=articles)
 
-
-@app.route('/test')
+@ app.route('/test')
 def show_image():
     return render_template('image.html')
 
-@app.route('/article/<int:id>')
+@ app.route('/article/<int:id>')
 def article(id):
-    print(id)
     articles = Articles()[id-1]
     print(articles)
-    return render_template('article.html', data = articles)
-    # return "Success"
-
-
-if __name__== '__main__':
-    # app.run(host= '0.0.0.0', port = '8080')
+    return render_template('article.html', data=articles)
+if __name__ == "__main__":
     app.run()
