@@ -39,7 +39,17 @@ def is_admin(f):
     @wraps(f)
     def wrap(*args , **kwargs):
         if session['username']=="admin":
-            return render_template('admin.html')
+            return redirect('/admin')
+        else:
+            return f(*args , **kwargs)
+    return wrap
+
+def is_admined(f):
+    @wraps(f)
+    def wrap(*args , **kwargs):
+        if session['username'] !="admin":
+            return redirect('/')
+        
         else:
             return f(*args , **kwargs)
     return wrap
@@ -132,6 +142,36 @@ def is_logged_in(f):
 
     return _wraper
 
+@app.route('/admin', methods=['GET', 'POST'])
+@is_logged_in
+@is_admined
+def admin():
+    cursor = db.cursor()
+    sql='SELECT * FROM users;'
+    cursor.execute(sql)
+    admin_user = cursor.fetchall()
+    return render_template('admin.html', data=admin_user )
+
+@app.route('/user/<string:id>', methods=['GET', 'POST'])
+@is_logged_in
+@is_admined
+def change_level(id):
+    if request.method == 'POST':
+        cursor = db.cursor()
+        sql='UPDATE `users` SET `auth`=%s WHERE  `id`=%s;'
+        
+        auth = request.form['auth']
+        cursor.execute(sql, [auth, id])
+        return redirect('/')
+    else:
+        cursor = db.cursor()
+        sql='SELECT * FROM users WHERE id=%s'        
+        cursor.execute(sql, [id])
+        user = cursor.fetchone()
+        return render_template('change_level.html', users=user)                         #유저수정
+
+
+
 @app.route('/logout')
 @is_logged_in
 def logout():
@@ -142,7 +182,6 @@ def logout():
 @app.route('/')
 @is_logged_in
 @is_admin
-
 def index():
     print("Success")
     # session['test'] = "Gary Kim"
