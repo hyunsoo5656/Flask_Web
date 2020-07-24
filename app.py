@@ -3,7 +3,6 @@ from flask import Flask ,render_template , flash , redirect , url_for, session, 
 import pymysql
 from passlib.hash import pbkdf2_sha256
 from data import Articles
-
 from functools import wraps
 
 app = Flask(__name__)
@@ -25,19 +24,25 @@ db = pymysql.connect(host='localhost',
 # users  = cur.fetchall()
 # print(users)
 # print(result)
-
 def is_logged_out(f):
     @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'is_logged' in session: 
-        # if session['is_logged']:
+    def wrap(*args , **kwargs):
+        if 'is_logged' in session:
+        # if is session['is_logged']:
             return redirect(url_for('articles'))
         else:
-            return f(*args, **kwargs)                   
-    
+            return f(*args ,**kwargs)
+
     return wrap
 
-
+def is_admin(f):
+    @wraps(f)
+    def wrap(*args , **kwargs):
+        if session['username']=="admin":
+            return render_template('admin.html')
+        else:
+            return f(*args , **kwargs)
+    return wrap
 
 @app.route('/register',methods=['GET' ,'POST'])
 @is_logged_out
@@ -51,25 +56,33 @@ def register():
         re_password = request.form.get('re_password')
         username = request.form.get('username')
         # name = form.name.data
-        if(pbkdf2_sha256.verify(re_password,password )):
-            print(pbkdf2_sha256.verify(re_password,password ))
-            cursor = db.cursor()
-            sql = '''
-                INSERT INTO users (name , email , username , password) 
-                VALUES (%s ,%s, %s, %s )
-             '''
-            cursor.execute(sql , (name,email,username,password ))
-            db.commit()
-            
-
-            # cursor = db.cursor()
-            # cursor.execute('SELECT * FROM users;')
-            # users = cursor.fetchall()
-            
-            return redirect(url_for('login'))
-
+        cursor = db.cursor()
+        sql = 'SELECT username FROM users WHERE username=%s'
+        cursor.execute(sql,[username])
+        username_one = cursor.fetchone()
+        if username_one :
+            return redirect(url_for('register'))
         else:
-            return "Invalid Password"
+
+            if(pbkdf2_sha256.verify(re_password,password )):
+                print(pbkdf2_sha256.verify(re_password,password ))
+                
+                sql = '''
+                    INSERT INTO users (name , email , username , password) 
+                    VALUES (%s ,%s, %s, %s )
+                '''
+                cursor.execute(sql , (name,email,username,password ))
+                db.commit()
+                
+
+                # cursor = db.cursor()
+                # cursor.execute('SELECT * FROM users;')
+                # users = cursor.fetchall()
+                
+                return redirect(url_for('login'))
+
+            else:
+                return redirect(url_for('register'))
 
         db.close()
     else:
@@ -80,11 +93,11 @@ def register():
 @is_logged_out
 def login():
     if request.method == 'POST':
-        id = request.form['email']
+        id = request.form['username']
         pw = request.form.get('password')
         print([id])
 
-        sql='SELECT * FROM users WHERE email = %s'
+        sql='SELECT * FROM users WHERE username = %s'
         cursor  = db.cursor()
         cursor.execute(sql, [id])
         users = cursor.fetchone()
@@ -94,52 +107,47 @@ def login():
             return redirect(url_for('login'))
         else:
             if pbkdf2_sha256.verify(pw,users[4] ):
-                # session['test'] = "KIM"
-                # session_data = session
-                # print(session_data)
-                                                            #세션 ==> 크롬 쿠키 (로그인 쿠키)
-                session['is_logged'] = True                 #로그인 되는지 확인  세션에 저장되어있는걸 is_logged 변수로 설정
-                session['username'] = users[3]              #Hello world 찍어보려고
+                session['is_logged'] = True
+                session['username'] = users[3]
                 print(session)
-                return redirect(url_for('articles'))
+                return redirect('/')
             else:
                 return redirect(url_for('login'))
         
     else:
         return render_template('login.html')
 
-def is_logged_in(f):
-    
-    @wraps(f)
-    def _wraper(*args, **kwargs):
-        if 'is_logged' in session:              #102줄이랑 똑같음
-        # if session['is_logged']:
-            return f(*args, **kwargs)
-        
-        else:
-            flash('UnAuthorized, please login', 'danger')
-            return redirect(url_for('login'))                   #로그인창으로 보내줌
-    
-    return _wraper
 
+
+def is_logged_in(f):
+    @wraps(f)
+    def _wraper(*args ,**kwargs):
+        if 'is_logged' in session:
+        # if session['is_logged'] : 
+            return f(*args , **kwargs)
+
+        else:
+            flash('UnAuthorized , Please login', 'danger')
+            return redirect(url_for('login'))
+
+    return _wraper
 
 @app.route('/logout')
 @is_logged_in
 def logout():
     session.clear()
     return redirect(url_for('login'))
-
-
-
-
+    
 
 @app.route('/')
 @is_logged_in
+@is_admin
+
 def index():
     print("Success")
-    # session['test'] = "KIM"
-    # session_data = session
-    # print(session_data)
+    # session['test'] = "Gary Kim"
+    # sesson_data = session
+    # print(sesson_data)
     # return "TEST"
     return render_template('home.html')
 
@@ -159,7 +167,7 @@ def articles():
     sql='SELECT * FROM topic;'
     cursor.execute(sql)
     data = cursor.fetchall()
-    # print(data)
+    print(data)
     return render_template('articles.html',articles=data)
     # return "GET Success"
 
@@ -235,14 +243,10 @@ def delete(id):
     
     return redirect(url_for('articles'))
 
-#처음 실행 
 if __name__ =='__main__':
     # app.run(host='0.0.0.0', port='8080')
-    # session 실행시 필요한 설정
-    app.secret_key = 'secretkey1112333344'  
-    
-    # 서버 실행
+    # ssession 실행시 필요한 설정
+    app.secret_key = 'secretKey123456789'
+    #서버실행
     app.run()
-
-
-
+    
